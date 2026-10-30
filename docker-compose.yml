@@ -1,0 +1,25 @@
+services:
+  umrah-footage-ai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: umrah-footage-ai
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - POLLING_INTERVAL_MINUTES=5
+      - AUTO_POLLING_ENABLED=true
+    volumes:
+      - umrah_data:/app/backend/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/scan/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  umrah_data:
+    driver: local
