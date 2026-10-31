@@ -30,7 +30,7 @@ class ComposioDriveService:
         try:
             from composio import Composio
             composio_client = Composio(api_key=api_key)
-            auth_configs = composio_client.auth_configs.list(toolkit_slugs=["googledrive"])
+            auth_configs = composio_client.auth_configs.list(toolkit_slug="googledrive")
             items = auth_configs.items if hasattr(auth_configs, "items") else auth_configs
             ac_id = items[0].id if items else None
             
