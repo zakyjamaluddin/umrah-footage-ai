@@ -170,6 +170,7 @@ class PollingSchedulerService:
             "is_processing_queue": cls.is_processing_queue,
             "last_poll_time": cls.last_poll_time.isoformat() if cls.last_poll_time else None,
             "polling_interval_minutes": interval,
+            "last_error": ComposioDriveService.last_error,
             "queue_counts": {
                 "total": len(queue),
                 "pending": pending,

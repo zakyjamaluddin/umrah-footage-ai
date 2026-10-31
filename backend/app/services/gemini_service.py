@@ -2,7 +2,6 @@ import os
 import json
 import logging
 from typing import Dict, Any, List, Optional
-from pydantic import BaseModel
 from app.config import settings
 from app.database import get_setting
 from app.models import SceneMetadata, FileMetadata
@@ -42,6 +41,14 @@ Keluarkan HANYA JSON murni dengan format:
 }
 """
 
+CANDIDATE_MODELS = [
+    "gemini-3.8-flash",
+    "gemini-flash-latest",
+    "gemini-2.5-flash-lite",
+    "gemini-3.5-flash",
+    "gemini-2.5-flash"
+]
+
 class GeminiAnalyzerService:
     @classmethod
     def get_api_key(cls) -> Optional[str]:
@@ -55,7 +62,6 @@ class GeminiAnalyzerService:
     async def analyze_media_file(cls, file_path: Optional[str], file_name: str, file_type: str, file_id: str, storage_url: str) -> FileMetadata:
         api_key = cls.get_api_key()
         
-        # If API key is available and file exists, call Gemini File API
         if api_key and file_path and os.path.exists(file_path):
             try:
                 from google import genai
@@ -66,7 +72,6 @@ class GeminiAnalyzerService:
                 
                 uploaded_file = client.files.upload(file=file_path)
                 
-                # Wait for video processing if video
                 if file_type == "video":
                     import time
                     while uploaded_file.state.name == "PROCESSING":
@@ -76,19 +81,31 @@ class GeminiAnalyzerService:
                     if uploaded_file.state.name == "FAILED":
                         raise Exception("Gemini video processing failed.")
 
-                logger.info(f"Analyzing {file_name} with Gemini 2.5 Flash...")
-                response = client.models.generate_content(
-                    model="gemini-2.5-flash",
-                    contents=[
-                        uploaded_file,
-                        GEMINI_ANALYSIS_PROMPT
-                    ],
-                    config=types.GenerateContentConfig(
-                        response_mime_type="application/json"
-                    )
-                )
+                logger.info(f"Analyzing {file_name} with Gemini Flash...")
+                
+                response = None
+                last_err = None
+                for model_name in CANDIDATE_MODELS:
+                    try:
+                        response = client.models.generate_content(
+                            model=model_name,
+                            contents=[
+                                uploaded_file,
+                                GEMINI_ANALYSIS_PROMPT
+                            ],
+                            config=types.GenerateContentConfig(
+                                response_mime_type="application/json"
+                            )
+                        )
+                        logger.info(f"Successfully analyzed with model: {model_name}")
+                        break
+                    except Exception as me:
+                        logger.warning(f"Model {model_name} failed: {me}. Trying next model...")
+                        last_err = me
 
-                # Clean up uploaded file from Gemini storage
+                if not response:
+                    raise last_err or Exception("All candidate Gemini models failed.")
+
                 try:
                     client.files.delete(name=uploaded_file.name)
                 except Exception as del_err:
@@ -115,15 +132,12 @@ class GeminiAnalyzerService:
 
             except Exception as e:
                 logger.error(f"Error calling Gemini API for {file_name}: {e}")
-                # Fallback to smart simulated breakdown based on filename
                 return cls._generate_smart_simulation(file_id, file_name, file_type, storage_url)
         else:
-            # Fallback smart simulation for immediate verification without API key
             return cls._generate_smart_simulation(file_id, file_name, file_type, storage_url)
 
     @classmethod
     def _generate_smart_simulation(cls, file_id: str, file_name: str, file_type: str, storage_url: str) -> FileMetadata:
-        """Smart metadata generator based on Umrah context when API Key is not yet set."""
         name_lower = file_name.lower()
         
         if file_type == "image":

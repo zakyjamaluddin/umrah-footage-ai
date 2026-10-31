@@ -128,6 +128,17 @@ export const Dashboard: React.FC<{ onNavigateToSettings: () => void }> = ({ onNa
         </div>
       </div>
 
+      {/* Warning if scan error */}
+      {scanStatus?.last_error && (
+        <div className="bg-amber-50 border border-amber-200/90 rounded-2xl p-4 flex items-start gap-3 shadow-sm">
+          <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="text-xs text-amber-900 leading-relaxed">
+            <span className="font-bold">Status Koneksi Google Drive: </span>
+            {scanStatus.last_error}
+          </div>
+        </div>
+      )}
+
       {/* Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">

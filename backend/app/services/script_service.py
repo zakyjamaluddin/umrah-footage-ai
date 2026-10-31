@@ -37,6 +37,14 @@ Naskah Iklan:
 \"\"\"{script_text}\"\"\"
 """
 
+CANDIDATE_MODELS = [
+    "gemini-3.8-flash",
+    "gemini-flash-latest",
+    "gemini-2.5-flash-lite",
+    "gemini-3.5-flash",
+    "gemini-2.5-flash"
+]
+
 class AdsScriptMatcherService:
     @classmethod
     async def analyze_and_match(cls, request: AdsScriptAnalysisRequest) -> AdsScriptAnalysisResponse:
@@ -54,13 +62,22 @@ class AdsScriptMatcherService:
                     script_text=request.script_text
                 )
                 
-                response = client.models.generate_content(
-                    model="gemini-2.5-flash",
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
-                        response_mime_type="application/json"
-                    )
-                )
+                response = None
+                for model_name in CANDIDATE_MODELS:
+                    try:
+                        response = client.models.generate_content(
+                            model=model_name,
+                            contents=prompt,
+                            config=types.GenerateContentConfig(
+                                response_mime_type="application/json"
+                            )
+                        )
+                        break
+                    except Exception as me:
+                        logger.warning(f"Script breakdown failed on {model_name}: {me}")
+                
+                if not response:
+                    raise Exception("All candidate models failed.")
 
                 json_text = response.text.strip()
                 if json_text.startswith("```json"):
