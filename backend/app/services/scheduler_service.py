@@ -171,6 +171,7 @@ class PollingSchedulerService:
             "last_poll_time": cls.last_poll_time.isoformat() if cls.last_poll_time else None,
             "polling_interval_minutes": interval,
             "last_error": ComposioDriveService.last_error,
+            "composio_auth_url": ComposioDriveService.last_auth_url or ComposioDriveService.get_or_create_auth_url(),
             "queue_counts": {
                 "total": len(queue),
                 "pending": pending,

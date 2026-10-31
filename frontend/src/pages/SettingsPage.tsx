@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Key, FolderGit2, Clock, CheckCircle2, Save } from 'lucide-react';
+import { Settings, Key, FolderGit2, Clock, CheckCircle2, Save, ExternalLink, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { api, AppSettings } from '../api';
 
 export const SettingsPage: React.FC = () => {
@@ -11,6 +11,9 @@ export const SettingsPage: React.FC = () => {
     gemini_api_key_masked: '',
     polling_interval_minutes: 5,
     auto_polling_enabled: true,
+    gdrive_connected: false,
+    gdrive_status: '',
+    gdrive_auth_url: '',
   });
 
   const [folderId, setFolderId] = useState('');
@@ -20,18 +23,19 @@ export const SettingsPage: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+  const fetchSettings = async () => {
+    try {
+      const res = await api.get('/settings/');
+      const data: AppSettings = res.data;
+      setConfig(data);
+      setFolderId(data.google_drive_folder_id || '');
+      setPollingMinutes(data.polling_interval_minutes || 5);
+    } catch (err) {
+      console.error('Failed to load settings:', err);
+    }
+  };
+
   useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const res = await api.get('/settings/');
-        const data: AppSettings = res.data;
-        setConfig(data);
-        setFolderId(data.google_drive_folder_id || '');
-        setPollingMinutes(data.polling_interval_minutes || 5);
-      } catch (err) {
-        console.error('Failed to load settings:', err);
-      }
-    };
     fetchSettings();
   }, []);
 
@@ -48,8 +52,7 @@ export const SettingsPage: React.FC = () => {
         polling_interval_minutes: Number(pollingMinutes),
       });
 
-      const res = await api.get('/settings/');
-      setConfig(res.data);
+      await fetchSettings();
       setComposioKey('');
       setGeminiKey('');
       setSaveSuccess(true);
@@ -80,6 +83,55 @@ export const SettingsPage: React.FC = () => {
           <span>Pengaturan berhasil disimpan dan scheduler background 24/7 telah diperbarui!</span>
         </div>
       )}
+
+      {/* Google Drive OAuth Connection Status Card */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${
+              config.gdrive_connected 
+                ? 'bg-emerald-50 text-emerald-600' 
+                : 'bg-amber-50 text-amber-600'
+            }`}>
+              {config.gdrive_connected ? <ShieldCheck className="w-6 h-6" /> : <AlertTriangle className="w-6 h-6" />}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-slate-900">Otorisasi Akun Google Drive (Composio)</h3>
+                <span className={`text-[11px] px-2.5 py-0.5 rounded-full border font-semibold ${
+                  config.gdrive_connected
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'bg-amber-50 text-amber-700 border-amber-200'
+                }`}>
+                  {config.gdrive_connected ? 'Aktif & Terhubung (ACTIVE)' : `Belum Terhubung (${config.gdrive_status || 'INITIALIZING'})`}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {config.gdrive_connected
+                  ? 'Akun Google Drive Anda telah terhubung. Sistem dapat membaca folder dan mengindeks video secara otomatis.'
+                  : 'Selesaikan otorisasi Google Drive agar AI dapat membaca file video footage di folder Google Drive Anda.'}
+              </p>
+            </div>
+          </div>
+
+          {/* Action button if not connected or to reconnect */}
+          {config.gdrive_auth_url && (
+            <a
+              href={config.gdrive_auth_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`flex items-center justify-center space-x-2 px-5 py-2.5 rounded-xl font-bold text-xs transition shadow-sm ${
+                config.gdrive_connected
+                  ? 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                  : 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-orange-500/20'
+              }`}
+            >
+              <span>{config.gdrive_connected ? 'Hubungkan Ulang Drive' : 'Hubungkan Google Drive Sekarang'}</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          )}
+        </div>
+      </div>
 
       <form onSubmit={handleSave} className="space-y-6">
         {/* Google Drive Folder Setting */}
@@ -128,7 +180,7 @@ export const SettingsPage: React.FC = () => {
           {/* Composio Key */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-slate-700">Composio API Key:</label>
+              <label className="text-xs font-semibold text-slate-700">Composio Access Key (ak_...):</label>
               <span className={`text-[11px] px-2.5 py-0.5 rounded-full border font-medium ${config.composio_api_key_set ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
                 {config.composio_api_key_set ? `Terpasang (${config.composio_api_key_masked})` : 'Belum Terpasang'}
               </span>
@@ -137,7 +189,7 @@ export const SettingsPage: React.FC = () => {
               type="password"
               value={composioKey}
               onChange={(e) => setComposioKey(e.target.value)}
-              placeholder={config.composio_api_key_set ? 'Biarkan kosong jika tidak ingin mengubah' : 'Masukkan API Key Composio Anda'}
+              placeholder={config.composio_api_key_set ? 'Biarkan kosong jika tidak ingin mengubah' : 'ak_... (Composio Access Key)'}
               className="w-full px-4 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-orange-500 focus:bg-white font-mono transition"
             />
           </div>

@@ -74,4 +74,7 @@ export interface AppSettings {
   gemini_api_key_masked: string;
   polling_interval_minutes: number;
   auto_polling_enabled: boolean;
+  gdrive_connected?: boolean;
+  gdrive_status?: string;
+  gdrive_auth_url?: string;
 }

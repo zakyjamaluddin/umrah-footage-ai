@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Video, Image as ImageIcon, Sparkles, AlertCircle, CheckCircle2, Clock, FolderGit2, ArrowRight } from 'lucide-react';
+import { RefreshCw, Video, Image as ImageIcon, Sparkles, AlertCircle, CheckCircle2, Clock, FolderGit2, ArrowRight, ExternalLink } from 'lucide-react';
 import { api, FileItem, QueueTaskItem } from '../api';
 
 export const Dashboard: React.FC<{ onNavigateToSettings: () => void }> = ({ onNavigateToSettings }) => {
@@ -128,14 +128,27 @@ export const Dashboard: React.FC<{ onNavigateToSettings: () => void }> = ({ onNa
         </div>
       </div>
 
-      {/* Warning if scan error */}
+      {/* Warning if scan error or pending Google Drive Auth */}
       {scanStatus?.last_error && (
-        <div className="bg-amber-50 border border-amber-200/90 rounded-2xl p-4 flex items-start gap-3 shadow-sm">
-          <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-          <div className="text-xs text-amber-900 leading-relaxed">
-            <span className="font-bold">Status Koneksi Google Drive: </span>
-            {scanStatus.last_error}
+        <div className="bg-amber-50 border border-amber-200/90 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="text-xs text-amber-900 leading-relaxed">
+              <span className="font-bold">Status Koneksi Google Drive: </span>
+              {scanStatus.last_error}
+            </div>
           </div>
+          {scanStatus?.composio_auth_url && (
+            <a
+              href={scanStatus.composio_auth_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center space-x-2 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs transition shadow-sm flex-shrink-0"
+            >
+              <span>Hubungkan Google Drive</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          )}
         </div>
       )}
 

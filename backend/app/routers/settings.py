@@ -3,6 +3,7 @@ from app.models import SettingsUpdateRequest
 from app.database import get_setting, set_setting, get_all_settings
 from app.config import settings
 from app.services.scheduler_service import PollingSchedulerService
+from app.services.composio_service import ComposioDriveService
 
 router = APIRouter(prefix="/settings", tags=["settings"])
 
@@ -19,6 +20,8 @@ def get_current_settings():
     interval = int(get_setting("polling_interval_minutes", str(settings.POLLING_INTERVAL_MINUTES)))
     auto_polling = get_setting("auto_polling_enabled", "true").lower() == "true"
 
+    conn_status = ComposioDriveService.check_connection_status()
+
     return {
         "google_drive_folder_id": folder_id,
         "composio_api_key_set": bool(composio_key),
@@ -26,8 +29,16 @@ def get_current_settings():
         "gemini_api_key_set": bool(gemini_key),
         "gemini_api_key_masked": mask_key(gemini_key),
         "polling_interval_minutes": interval,
-        "auto_polling_enabled": auto_polling
+        "auto_polling_enabled": auto_polling,
+        "gdrive_connected": conn_status.get("connected", False),
+        "gdrive_status": conn_status.get("status", "NOT_CONFIGURED"),
+        "gdrive_auth_url": conn_status.get("auth_url")
     }
+
+@router.get("/gdrive-auth-url")
+def get_gdrive_auth_url():
+    url = ComposioDriveService.get_or_create_auth_url()
+    return {"auth_url": url}
 
 @router.post("/")
 def update_settings(payload: SettingsUpdateRequest):
