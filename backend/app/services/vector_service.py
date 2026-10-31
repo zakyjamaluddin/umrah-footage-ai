@@ -37,12 +37,16 @@ class SceneVectorIndex:
             try:
                 from google import genai
                 client = genai.Client(api_key=key)
-                response = client.models.embed_content(
-                    model="text-embedding-004",
-                    contents=text,
-                )
-                if response.embeddings and len(response.embeddings) > 0:
-                    return response.embeddings[0].values
+                for embed_model in ["gemini-embedding-001", "gemini-embedding-2"]:
+                    try:
+                        response = client.models.embed_content(
+                            model=embed_model,
+                            contents=text,
+                        )
+                        if response.embeddings and len(response.embeddings) > 0:
+                            return response.embeddings[0].values
+                    except Exception:
+                        continue
             except Exception as e:
                 pass
         
