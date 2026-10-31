@@ -12,6 +12,9 @@ export interface Scene {
   file_id: string;
   file_name?: string;
   storage_url?: string;
+  stream_url?: string;
+  preview_url?: string;
+  thumbnail_url?: string;
   file_type?: string;
   start_time: number;
   end_time: number;
@@ -29,6 +32,8 @@ export interface FileItem {
   file_name: string;
   file_type: 'video' | 'image';
   storage_url: string;
+  stream_url?: string;
+  preview_url?: string;
   duration_seconds: number;
   thumbnail_url?: string;
   parent_folder?: string;
