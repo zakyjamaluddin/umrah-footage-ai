@@ -16,7 +16,7 @@ export const Dashboard: React.FC<{ onNavigateToSettings: () => void }> = ({ onNa
   const fetchData = async () => {
     try {
       const [filesRes, scenesRes, statusRes, queueRes] = await Promise.all([
-        api.get('/files/'),
+        api.get('/files/?limit=1000'),
         api.get('/files/scenes/all'),
         api.get('/scan/status'),
         api.get('/scan/queue'),
@@ -24,11 +24,12 @@ export const Dashboard: React.FC<{ onNavigateToSettings: () => void }> = ({ onNa
 
       const files: FileItem[] = filesRes.data.items || [];
       const scenes = scenesRes.data.items || [];
+      const totalCount = filesRes.data.total || files.length;
       const videos = files.filter((f) => f.file_type === 'video').length;
       const images = files.filter((f) => f.file_type === 'image').length;
 
       setStats({
-        totalFiles: files.length,
+        totalFiles: totalCount,
         totalVideos: videos,
         totalImages: images,
         totalScenes: scenes.length,

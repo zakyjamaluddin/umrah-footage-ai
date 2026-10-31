@@ -3,16 +3,17 @@ import httpx
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
 from typing import List, Optional, Dict, Any
-from app.database import get_all_files, get_file_by_id, get_all_scenes
+from app.database import get_all_files, get_file_by_id, get_all_scenes, get_files_count
 
 router = APIRouter(prefix="/files", tags=["files"])
 
 @router.get("/")
 def list_files(
-    limit: int = Query(50, ge=1, le=200),
+    limit: int = Query(1000, ge=1, le=10000),
     offset: int = Query(0, ge=0),
     file_type: Optional[str] = None
 ):
+    total = get_files_count(file_type=file_type)
     files = get_all_files(limit=limit, offset=offset)
     if file_type:
         files = [f for f in files if f.get("file_type") == file_type]
@@ -29,7 +30,7 @@ def list_files(
             s["preview_url"] = f["preview_url"]
 
     return {
-        "total": len(files),
+        "total": total,
         "items": files
     }
 

@@ -18,7 +18,7 @@ export const FootageLibrary: React.FC<FootageLibraryProps> = ({ onSelectScene })
   const fetchFiles = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/files/?limit=100');
+      const res = await api.get('/files/?limit=1000');
       setFiles(res.data.items || []);
     } catch (err) {
       console.error('Error fetching files:', err);

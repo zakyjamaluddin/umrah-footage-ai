@@ -125,7 +125,19 @@ def save_file_metadata(file_meta: FileMetadata):
     conn.commit()
     conn.close()
 
-def get_all_files(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
+def get_files_count(file_type: Optional[str] = None) -> int:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    if file_type:
+        cursor.execute("SELECT COUNT(1) FROM files WHERE file_type = ?", (file_type,))
+    else:
+        cursor.execute("SELECT COUNT(1) FROM files")
+    row = cursor.fetchone()
+    count = row[0] if row else 0
+    conn.close()
+    return count
+
+def get_all_files(limit: int = 1000, offset: int = 0) -> List[Dict[str, Any]]:
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM files ORDER BY analyzed_at DESC LIMIT ? OFFSET ?", (limit, offset))
